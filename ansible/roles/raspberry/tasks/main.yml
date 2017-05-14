@@ -1,0 +1,24 @@
+---
+# file: roles/raspberry/Tasks/main.yml
+
+- include: install.yml
+  tags: install
+
+- include: nginx.yml
+  tags: nginx
+
+- include: docker.yml
+  tags: docker
+
+- include: uv4l.yml
+
+- include: vpn.yml
+
+- include: networking.yml
+
+- include: other.yml
+
+- include: gloveberry.yml
+  tags:
+    - gloveberry_install
+    - gloveberry_setup

@@ -1,0 +1,22 @@
+---
+
+- name: Install requirements
+  apt:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - libbluetooth-dev
+    - pi-bluetooth
+    - bluez
+    - python-bluez
+
+# Here I will add the project copy or clone
+
+- name: Create the initial virtualenv
+  command: virtualenv /opt/rover360/PyGlove -p python3.4 creates="/opt/rover360/PyGlove"
+
+- name: Install requirements
+  pip:
+    requirements: /srv/rover360/PyGlove/requirements.txt
+    virtualenv: /opt/rover360/PyGlove
+    virtualenv_python: python3.4

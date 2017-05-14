@@ -1,0 +1,7 @@
+---
+
+- name: restart uv4l_raspicam
+  service: name=uv4l_raspicam state=restarted
+
+- name: restart uv4l-uvc
+  service: name=uv4l_uvc state=restarted

@@ -1,0 +1,10 @@
+---
+# file: raspberry.yml
+
+- hosts: raspberrys
+  become: yes
+  become_method: sudo
+  gather_facts: no
+  user: pi
+  roles:
+    - raspberry

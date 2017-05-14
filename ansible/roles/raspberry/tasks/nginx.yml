@@ -1,0 +1,14 @@
+---
+# file: roles/raspberry/Tasks/nginx.yml
+
+- name: NGINX | Remove enabled sites
+  shell: rm /etc/nginx/sites-enabled/*
+  ignore_errors: true
+
+- name: NGINX | Copy nginx site
+  copy: src=etc/nginx/sites-enabled/nginx80 dest=/etc/nginx/sites-enabled/
+
+- name: NGINX | Restart services
+  service: name={{ item.name }} state=restarted
+  with_items:
+   - name: 'nginx'

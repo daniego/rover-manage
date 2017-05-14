@@ -1,0 +1,28 @@
+---
+# file: roles/raspberry/Tasks/install.yml
+
+# - name: Add multimedia repo
+#   apt_repository: repo='{{ item }}' state=present
+#   with_items:
+#     - "deb http://www.deb-multimedia.org jessie main non-free"
+#     - "deb-src http://www.deb-multimedia.org jessie main non-free"
+
+- name: Install basic packages
+  sudo: yes
+  apt: pkg={{item.name}} state=present update_cache=yes
+  with_items:
+    - { name: 'nginx'}
+    - { name: 'supervisor'}
+    # Python stuff
+    - { name: 'python' }
+    - { name: 'python-dev' }
+    #
+    - { name: 'docker' }
+    # Do I need this anymore?
+    # - { name: 'php5-cli'}
+    # - { name: 'php5-fpm'}
+    # - { name: 'gstreamer1.0'}
+    # - { name: 'gstreamer-tools' }
+    # - { name: 'libffi-dev' }
+    # - { name: 'libmysqlclient-dev' }
+    # - { name: 'wpa_supplicant' }

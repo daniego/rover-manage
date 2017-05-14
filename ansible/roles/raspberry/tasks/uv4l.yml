@@ -1,0 +1,78 @@
+---
+
+- name: Add uv4l key
+  apt_key: url=http://www.linux-projects.org/listing/uv4l_repo/lrkey.asc state=present
+  tags: uv4l-install
+
+- name: Add uv4l repo
+  apt_repository: repo='{{ item }}' state=present
+  with_items:
+    - "deb http://www.linux-projects.org/listing/uv4l_repo/raspbian/ wheezy main"
+  tags: uv4l-install
+
+- name: Install basic packages
+  sudo: yes
+  apt: pkg={{ item }} state=present update_cache=yes
+  with_items:
+   - uv4l
+   - uv4l-uvc
+  #  - uv4l-webrtc
+  #  - uv4l-raspicam
+  #  - uv4l-raspicam-extras
+  #  - uv4l-server
+  #  - libmtp-runtime # Support for Ricoh Theta S
+  #  - uv4l-xscreen
+  #  - uv4l-mjpegstream
+  #  - raspberrypi-kernel-headers
+  #  - build-essential
+  #  - fuse
+  notify: restart uv4l_raspicam
+  tags: uv4l-install
+
+- name: UV4L | service uv4l-raspicam stopped
+  service:
+    name: uv4l_raspicam
+    state: stopped
+  tags:
+    - uv4l-config
+- name: UV4L | Copy config
+  copy: src=etc/uv4l/uv4l-uvc.conf dest=/etc/uv4l/uv4l-uvc.conf
+  notify: restart uv4l-uvc
+  tags:
+    - uv4l-config
+# When (re)starting the service, uv4l will be instructed to parse the configuration
+# file /etc/uv4l/uv4l-raspicam.conf to get the default values of the driver options
+
+# do I need this?
+# - name: UV4L | supervisor
+#   copy: src=etc/supervisor/conf.d/uv4l.conf dest=/etc/supervisor/conf.d/uv4l.conf
+#   tags:
+#     - uv4l-config
+#     - supervisor
+
+########################################################
+# add ptp
+# look here for info http://codetricity.github.io/theta-s/usb.html
+# https://downloads.sourceforge.net/project/libptp/libptp2/libptp2-1.2.0/libptp2-1.2.0.tar.gz
+# dependencies libusb-dev
+# ./configure
+# make
+# make Install
+#
+#
+# Libraries have been installed in:
+#    /usr/local/lib
+#
+# If you ever happen to want to link against installed libraries
+# in a given directory, LIBDIR, you must either use libtool, and
+# specify the full pathname of the library, or use the `-LLIBDIR'
+# flag during linking and do at least one of the following:
+#    - add LIBDIR to the `LD_LIBRARY_PATH' environment variable
+#      during execution
+#    - add LIBDIR to the `LD_RUN_PATH' environment variable
+#      during linking
+#    - use the `-Wl,-rpath -Wl,LIBDIR' linker flag
+#    - have your system administrator add LIBDIR to `/etc/ld.so.conf'
+#
+# export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+# export LD_LIBRARY_PATH=/lib/modules/4.9.24-v7:$LD_LIBRARY_PATH

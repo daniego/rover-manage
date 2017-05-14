@@ -1,0 +1,16 @@
+---
+
+# Here I will add the project copy or clone
+
+- name: Roverbeyy | Create the initial virtualenv
+  command: virtualenv /opt/rover360/roverberry -p python3.4 creates="/opt/rover360/roverberry"
+
+- name: Roverbeyy | Install requirements
+  pip:
+    requirements: /srv/rover360/roverberry/requirements.txt
+    virtualenv: /opt/rover360/PyGlove
+    virtualenv_python: python3.4
+
+- name: Roverbeyy | supervisor
+  copy: src=etc/supervisor/conf.d/roverberry.conf dest=/etc/supervisor/conf.d/
+  tags: supervisor

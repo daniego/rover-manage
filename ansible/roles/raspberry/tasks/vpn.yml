@@ -1,0 +1,24 @@
+---
+# file: roles/raspberry/Tasks/vpn.yml
+
+- name: Install pptpd
+  apt: pkg={{ item.name }} state=present update_cache=yes
+  with_items:
+   - { name: 'pptpd'}
+  tags: vpn-install
+
+- name: Enable pptpd
+  service: name=pptpd enabled=yes
+  tags: vpn-config
+
+- name: copy pptp conf
+  copy: src=etc/pptpd.conf dest=/etc/pptpd.conf
+  tags: vpn-config
+
+- name: copy pptpd-options
+  copy: src=etc/ppp/pptpd-options dest=/etc/ppp/pptpd-options
+  tags: vpn-config
+
+- name: copy secrets
+  copy: src=etc/ppp/chap-secrets dest=/etc/ppp/chap-secrets
+  tags: vpn-config

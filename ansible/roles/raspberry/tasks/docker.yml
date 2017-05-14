@@ -1,0 +1,18 @@
+---
+# file: roles/raspberry/Tasks/install.yml
+
+- name: Install docker
+  shell: curl -sSL get.docker.com | sh
+
+- name: Add pi to docker group
+  user:
+    name: pi
+    shell: /bin/bash
+    groups: docker
+    append: yes
+
+- name: Make sure a service is running
+  systemd:
+    enabled: yes
+    state: started
+    name: docker

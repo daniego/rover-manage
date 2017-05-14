@@ -1,0 +1,47 @@
+---
+# file: roles/raspberry/Tasks/other.yml
+
+- name: copy gstreamer script
+  copy: src=supervisor_gstreamer.sh dest=/bin/supervisor_gstreamer.sh mode=777
+  tags: supervisor
+
+- name: copy janus streaming settings
+  copy: src=janus/etc/janus/janus.plugin.streaming.cfg dest=/opt/janus/etc/janus/janus.plugin.streaming.cfg
+  tags: supervisor
+
+- name: copy supervisor gstreamer
+  copy: src=etc/supervisor/conf.d/{{ item }} dest=/etc/supervisor/conf.d/
+  with_items:
+    - supervisor_gstreamer.conf
+    - supervisor_janus.conf
+  tags: supervisor
+
+- name: create base streaming directory
+  file: path=/var/www/nginx80/httpstream state=directory mode=0777
+  tags: supervisor
+
+- name: reload and restart supervisor
+  shell: "supervisorctl reload all"
+  tags: supervisor
+
+- name: reload and restart supervisor
+  shell: "supervisorctl restart all"
+  #shell: "supervisorctl stop all"
+  tags: supervisor
+
+###DYNDNS###
+- name: Install ddclient
+  apt: pkg={{ item.name }} state=present update_cache=yes
+  with_items:
+   - { name: 'ddclient'}
+  tags: ddns-install
+
+- name: copy interface conf
+  copy: src=etc/ddclient.conf dest=/etc/ddclient.conf
+  tags: ddns-config
+
+- name: restart ddclient
+  service: name=ddclient state=restarted
+  tags: ddns-config
+
+###END DYNDNS###
