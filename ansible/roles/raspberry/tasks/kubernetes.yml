@@ -1,0 +1,299 @@
+---
+# file: roles/raspberry/tasks/kubernetes.yml
+
+### ETCD
+
+- name: Run etcd
+  docker_container:
+    name: k8s-etcd
+    image: andrewpsuedonym/etcd:2.1.1
+    command: /bin/etcd --addr=127.0.0.1:4001 --bind-addr=0.0.0.0:4001 --data-dir=/var/etcd/data
+    state: started
+    # recreate: yes
+    restart: no
+    restart_policy: always
+    volumes:
+      - /var/lib/kubernetes/etcd:/var/etcd/data
+    network_mode: host
+  tags:
+    - etcd
+    - kube_deploy
+  when: inventory_hostname in groups['controllers']
+
+
+- name: Etcd set network
+  shell: >
+    docker run --net=host andrewpsuedonym/etcd:2.1.1 etcdctl set /coreos.com/network/config '{ "Network": "10.0.0.0/16" }'
+  when: inventory_hostname in groups['controllers']
+  tags:
+    - etcd
+    - kube_deploy
+### FANNEL
+
+- name: Run Flannel
+  docker_container:
+    name: k8s-flannel
+    image: andrewpsuedonym/flanneld
+    command: flanneld --etcd-endpoints=http://{{ inventory_hostname }}:4001
+    state: started
+    # recreate: yes
+    restart: yes
+    restart_policy: always
+    privileged: yes
+    network_mode: host
+    volumes:
+      - /dev/net:/dev/net
+  tags:
+    - etcd
+    - kube_deploy
+  when: inventory_hostname in groups['controllers']
+#   register: output
+#
+# - debug:
+#     var: output
+#
+# - assert:
+#     that:
+#       - "web.flask_web_1.state.running"
+#
+# - name: copy flannel stuff
+#   shell: >
+#     docker cp k8s-flannel:/run/flannel/subnet.env /etc/kubernetes
+#   tags:
+#     - etcd
+#     - kube_deploy
+
+### API
+
+- name: Run API
+  docker_container:
+    name: k8s-api
+    image: gcr.io/google-containers/hyperkube-arm:v1.6.4
+    command: /hyperkube apiserver --bind-address=0.0.0.0 --insecure-bind-address=0.0.0.0 --etcd-servers=http://127.0.0.1:4001 --allow-privileged=true --anonymous-auth=false --service-cluster-ip-range=10.100.0.0/16 --secure-port=6443 --storage-backend=etcd2 --storage-media-type=application/json --v=2
+    # --client-ca-file=/etc/kubernetes/ssl/ca.crt --tls-cert-file=/etc/kubernetes/ssl/server.crt --tls-private-key-file=/etc/kubernetes/ssl/server.key --token_auth_file=/etc/kubernetes/ssl/known_tokens.csv
+    state: started
+    # recreate: yes
+    restart: yes
+    restart_policy: always
+    volumes:
+      - /etc/kubernetes/ssl:/etc/kubernetes/ssl
+    network_mode: host
+    pid_mode: host
+    privileged: true
+  tags:
+    - kube_api
+    - kube_deploy
+  when: inventory_hostname in groups['controllers']
+
+### Proxy
+
+- name: Run Proxy
+  docker_container:
+    name: k8s-master-proxy
+    image: gcr.io/google-containers/hyperkube-arm:v1.6.4
+    command: /hyperkube proxy --master=http://127.0.0.1:8080 --v=2
+    state: started
+    # recreate: yes
+    restart: yes
+    restart_policy: always
+    volumes:
+      - /etc/kubernetes/ssl:/etc/kubernetes/ssl
+    network_mode: host
+    pid_mode: host
+    privileged: true
+  tags:
+    - kube_proxy
+    - kube_deploy
+  when: inventory_hostname in groups['controllers']
+
+### Kubelet
+- name: Run kubelet Master
+  docker_container:
+    name: k8s-kubelet-master
+    image: gcr.io/google-containers/hyperkube-arm:v1.6.4
+    command: /hyperkube kubelet --v=2 --address=0.0.0.0 --enable-server --allow-privileged=true --pod_infra_container_image=gcr.io/google_containers/pause-arm:2.0 --api-servers=http://localhost:8080 --hostname-override={{ inventory_hostname }} --cluster-dns=10.0.0.10 --cluster-domain=cluster.local --containerized --pod-manifest-path=/manifests
+    #  --config=/etc/kubernetes/manifests-multi
+    # --containerized --address=0.0.0.0 --port=10250 --hostname-override={{ inventory_hostname }} --api-servers=http://192.168.2.6:8080 --logtostderr=true --v=1
+    state: started
+    recreate: yes
+    restart: yes
+    restart_policy: always
+    volumes:
+      - /var/lib/docker/:/var/lib/docker
+      - /:/rootfs:ro
+      - /sys:/sys:ro
+      - /var/run:/var/run:rw
+      - /manifests:/manifests
+    network_mode: host
+    pid_mode: host
+    privileged: true
+  when: inventory_hostname in groups['controllers']
+  tags:
+    - kubelet
+    - kube_deploy
+
+# - name: Run kubelet workers
+#   docker_container:
+#     name: k8s-kubelet-worker
+#     image: gcr.io/google-containers/hyperkube-arm:v1.6.4
+#     command: >
+#       /hyperkube kubelet \
+#       --v=2 \
+#       --address=0.0.0.0 \
+#       --enable-server \
+#       --allow-privileged=true \
+#       --pod_infra_container_image=gcr.io/google_containers/pause-arm:2.0 \
+#       --api-servers=http://192.168.2.6:8080 \
+#       --hostname-override={{ inventory_hostname }} \
+#       --cluster-dns=10.0.0.10 \
+#       --cluster-domain=cluster.local \
+#       --containerized
+#     # --containerized --address=0.0.0.0 --port=10250 --hostname-override={{ inventory_hostname }} --api-servers=http://192.168.2.6:8080 --logtostderr=true --v=1
+#     state: started
+#     # recreate: yes
+#     restart: yes
+#     restart_policy: always
+#     volumes:
+#       - /var/lib/docker/:/var/lib/docker
+#       - /:/rootfs:ro
+#       - /sys:/sys:ro
+#       - /var/run:/var/run:rw
+#     network_mode: host
+#     pid_mode: host
+#     privileged: true
+#   when: inventory_hostname in groups['workers']
+#   tags:
+#     - kubelet
+#     - kube_deploy
+
+### Scheduler
+
+- name: Run scheduler
+  docker_container:
+    name: k8s-scheduler
+    image: gcr.io/google-containers/hyperkube-arm:v1.6.4
+    command: /hyperkube scheduler --logtostderr=true --master=http://192.168.2.6:8080
+    state: started
+    # recreate: yes
+    restart: yes
+    restart_policy: always
+    # volumes:
+    #   - /var/lib/docker/:/var/lib/docker
+    #   - /:/rootfs:ro
+    #   - /sys:/sys:ro
+    #   - /var/run:/var/run:rw
+    # network_mode: host
+    # pid_mode: host
+    # privileged: true
+  when: inventory_hostname in groups['controllers']
+  tags:
+    - scheduler
+    - kube_deploy
+
+### Scheduler
+
+- name: Run controller
+  docker_container:
+    name: k8s-controller
+    image: gcr.io/google-containers/hyperkube-arm:v1.6.4
+    command: /hyperkube controller-manager --logtostderr=true --master=http://192.168.2.6:8080 --v=2 --leader-elect=true --node-monitor-grace-period=20s --pod-eviction-timeout=20s
+    #  \
+    # --service-account-private-key-file=/etc/kubernetes/ssl/server.key \
+    # --root-ca-file=/etc/kubernetes/ssl/ca.pem
+    state: started
+    # recreate: yes
+    restart: yes
+    restart_policy: always
+    # volumes:
+    #   - /var/lib/docker/:/var/lib/docker
+    #   - /:/rootfs:ro
+    #   - /sys:/sys:ro
+    #   - /var/run:/var/run:rw
+    # network_mode: host
+    # pid_mode: host
+    # privileged: true
+  when: inventory_hostname in groups['controllers']
+  tags:
+    - controller
+    - kube_deploy
+
+
+
+
+#
+# # http://blog.kubernetes.io/2015/12/creating-raspberry-pi-cluster-running.html
+# # https://kubernetes.io/docs/getting-started-guides/kubeadm/
+# gcr.io/google-containers/hyperkube-arm:v1.6.4
+# # curl -fsSL -o /usr/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v1.1.2/bin/linux/arm/kubectl
+#
+# # --volume=/var/lib/kubelet/:/var/lib/kubelet:shared \
+#
+# docker run -it \
+# --volume=/var/lib/docker/:/var/lib/docker:rw \
+# --volume=/var/run:/var/run:rw \
+# --net=host \
+# --pid=host \
+# --privileged=true \
+# gcr.io/google-containers/hyperkube-arm:v1.6.4 kubelet \
+# --containerized \
+# --address=0.0.0.0 \
+# --port=10250 \
+# --hostname-override=controller \
+# --api-servers=http://controller:8080 \
+# --logtostderr=true \
+# --v=2
+#
+#
+#
+#
+#
+# docker run -d \
+# --name kube-apiserver \
+# -v /etc/kubernetes/ssl:/etc/kubernetes/ssl \
+# --net=host \
+# --pid=host \
+# --privileged=true \
+# gcr.io/google-containers/hyperkube-arm:v1.6.4 kube-apiserver \
+# --bind-address=0.0.0.0 \
+# --insecure-bind-address=0.0.0.0 \
+# --etcd-servers=http://127.0.0.1:2379 \
+# --allow-privileged=true \
+# --anonymous-auth=false \
+# --service-cluster-ip-range=10.100.0.0/16 \
+# --secure-port=6443 \
+# --client-ca-file=/etc/kubernetes/ssl/ca.crt \
+# --tls-cert-file=/etc/kubernetes/ssl/server.crt \
+# --tls-private-key-file=/etc/kubernetes/ssl/server.key \
+# --token_auth_file=/etc/kubernetes/ssl/known_tokens.csv \
+# --storage-backend=etcd2 \
+# --storage-media-type=application/json \
+# --v=2
+#
+#
+#
+# docker run -it -v /usr/share/ca-certificates/:/etc/ssl/certs -p 4001:4001 -p 2380:2380 -p 2379:2379 \
+#  --name etcd quay.io/coreos/etcd:v3.2.0-rc.1-arm64 \
+#  -name etcd0 \
+#  -advertise-client-urls http://192.168.2.6:2379,http://192.168.2.6:4001 \
+#  -listen-client-urls http://0.0.0.0:2379,http://0.0.0.0:4001 \
+#  -initial-advertise-peer-urls http://192.168.2.6:2380 \
+#  -listen-peer-urls http://0.0.0.0:2380 \
+#  -initial-cluster-token etcd-cluster-1 \
+#  -initial-cluster etcd0=http://192.168.2.6:2380 \
+#  -initial-cluster-state new
+#
+#
+#
+# docker run -d --net=host --name=k8s-etcd -v /var/lib/kubernetes/etcd:/var/etcd/data andrewpsuedonym/etcd:2.1.1 /bin/etcd --addr=127.0.0.1:4001 --bind-addr=0.0.0.0:4001 --data-dir=/var/etcd/data
+# #####
+# #
+# https://blog.hypriot.com/post/setup-kubernetes-raspberry-pi-cluster/
+# Finally, we need to setup flannel as the Pod network driver. Run this on the master node:
+#
+# $ curl -sSL https://rawgit.com/coreos/flannel/v0.7.0/Documentation/kube-flannel.yml | sed "s/amd64/arm/g" | kubectl create -f -
+#
+# ######
+# http://kubecloud.io/getting-up-and-running-with-kubernetes-io/
+# ExecStartPre=-/usr/bin/mkdir -p /var/lib/kubernetes/etcd
+# ExecStart=/usr/bin/docker run -d --net=host --name=k8s-etcd -v /var/lib/kubernetes/etcd:/var/etcd/data andrewpsuedonym/etcd:2.1.1 /bin/etcd --addr=127.0.0.1:4001 --bind-addr=0.0.0.0:4001 --data-dir=/var/etcd/data
+# ExecStartPost=/bin/bash -c "sleep 10;/usr/bin/docker -H unix:///var/run/docker-bootstrap.sock run --net=host andrewpsuedonym/etcd:2.1.1 etcdctl set /coreos.com/network/config '{ \"Network\": \"10.0.0.0/16\" }'"

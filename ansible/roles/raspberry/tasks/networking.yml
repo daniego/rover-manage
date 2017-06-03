@@ -1,25 +1,34 @@
 ---
 # file: roles/raspberry/Tasks/other.yml
 
-- name: Install isc-dhcp-server
+- name: Install networking requirements
   apt: pkg={{ item.name }} state=present update_cache=yes
   with_items:
-   - { name: 'isc-dhcp-server'}
-   - { name: 'hostapd'}
-  tags: router-install
+    - { name: 'isc-dhcp-server'}
+    - { name: 'hostapd'}
+    - { name: 'bridge-utils'}
+    - { name: 'wiringpi'}
+    - { name: 'screen'}
+    - { name: 'minicom'}
+  tags: networking-install
 
 - name: copy interface conf
   copy: src={{ item.src }} dest={{ item.dest }}
   with_items:
-    - { src: 'etc/network/interfaces', dest: '/etc/network/interfaces' }
-    - { src: 'etc/network/interfaces.d/eth0', dest: '/etc/network/interfaces.d/eth0' }
-    - { src: 'etc/network/interfaces.d/wlan0', dest: '/etc/network/interfaces.d/wlan0' }
-    - { src: 'etc/network/interfaces.d/wlan1', dest: '/etc/network/interfaces.d/wlan1' }
-    - { src: 'etc/wpa_supplicant/wpa_supplicant.conf', dest: '/etc/wpa_supplicant/wpa_supplicant.conf'}
+    - { src: 'etc/network/interfaces',         dest: '/etc/network/interfaces',         state: 'present'}
+    - { src: 'etc/network/interfaces.d/eth0',  dest: '/etc/network/interfaces.d/eth0',  state: 'present'}
+    - { src: 'etc/network/interfaces.d/br0',  dest: '/etc/network/interfaces.d/br0',  state: 'present'}
+    - { src: 'etc/network/interfaces.d/wlan0', dest: '/etc/network/interfaces.d/wlan0', state: 'present'}
+    - { src: 'etc/network/interfaces.d/wlan1', dest: '/etc/network/interfaces.d/wlan1', state: 'present'}
+    - { src: 'etc/wpa_supplicant/wpa_supplicant.conf', dest: '/etc/wpa_supplicant/wpa_supplicant.conf', state: 'present'}
   tags:
-    - router
+    - networking-config
     - interfaces
 
+- name: restart eth0 and bridge
+  shell: "ifdown eth0 && ifup eth0 && ifdown br0 && ifup br0"
+  tags:
+    - networking-eth-restart
 # - name: restart interface wlan1
 #   #service: name=networking state=restarted args=wlan1
 #   shell: "ifdown wlan1 && ifup wlan1"
@@ -89,3 +98,9 @@
   tags:
     - router
     - vpn-config
+
+- name: download clusterhat
+  copy:
+    src: usr/local/bin/clusterhat
+    dest: /usr/local/bin/clusterhat
+    mode: 755

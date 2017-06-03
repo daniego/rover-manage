@@ -8,7 +8,8 @@
   tags: nginx
 
 - include: docker.yml
-  tags: docker
+
+- include: kubernetes.yml
 
 - include: uv4l.yml
 

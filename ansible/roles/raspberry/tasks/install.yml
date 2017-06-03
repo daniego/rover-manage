@@ -11,13 +11,9 @@
   sudo: yes
   apt: pkg={{item.name}} state=present update_cache=yes
   with_items:
-    - { name: 'nginx'}
-    - { name: 'supervisor'}
-    # Python stuff
     - { name: 'python' }
     - { name: 'python-dev' }
-    #
-    - { name: 'docker' }
+    # - { name: 'docker' }
     # Do I need this anymore?
     # - { name: 'php5-cli'}
     # - { name: 'php5-fpm'}
@@ -26,3 +22,20 @@
     # - { name: 'libffi-dev' }
     # - { name: 'libmysqlclient-dev' }
     # - { name: 'wpa_supplicant' }
+
+
+# Swapp will be done soon
+#
+# dd if=/dev/zero of=/swap/swapfile bs=1M count=1024
+# mkswap /swap/swapfile
+# swapon /swap/swapfile
+# Now you can check with top that you have a 1GB of swap space.
+#
+# KiB Mem:	947468 total,	913096 used,	34372 free,	69884 buffers
+# KiB Swap:	1048572 total,	484 used,	1048088 free,	667248 cached
+# To make the swap permanent between reboots, add
+#
+# /swap/swapfile none swap sw 0 0
+# to your /etc/fstab file. Finally, in /etc/sysctl.conf, I've set the swappiness to 1:
+#
+# vm.swappiness = 1

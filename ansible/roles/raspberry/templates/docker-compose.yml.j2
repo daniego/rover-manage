@@ -1,0 +1,30 @@
+version: '2'
+services:
+  webserver:
+    image: roverwebserver
+    container_name: webserver
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - CONSUL_HTTP_TOKEN=""
+      - SWARM_IP=192.168.2.6
+    ports:
+      - 8088:80
+      - 8089:8089
+    volumes:
+      - /my_projects_repo/rover-webserver:/srv/rover-webserver
+    restart: always
+
+  engine:
+    image: engine
+    container_name: engine
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - CONSUL_HTTP_TOKEN=""
+    ports:
+      - 8098:80
+      - 8099:8099
+    volumes:
+      - /my_projects_repo/rover-engine:/srv/rover-engine
+    restart: always

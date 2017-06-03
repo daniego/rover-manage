@@ -1,8 +1,45 @@
 ---
-# file: roles/raspberry/Tasks/install.yml
+# file: roles/raspberry/tasks/docker.yml
+
+- name: Ensure /etc/docker exists
+  file:
+    path: /etc/docker
+    owner: root
+    group: root
+    mode: 0644
+    state: directory
+  tags: docker_install
+  when: inventory_hostname in groups['controllers']
+
+- name: Copy /etc/docker/daemon.json
+  copy:
+    src: etc/docker/daemon.json
+    dest: /etc/docker/daemon.json
+    owner: root
+    group: root
+    mode: 0644
+  tags: docker_install
+  when: inventory_hostname in groups['controllers']
+
+- name: Install docker on controllers
+  shell: curl -sSL get.docker.com | sh
+  tags: docker_install
+  when: inventory_hostname in groups['controllers']
+
+# iptables -A FORWARD -d 0.0.0.0/0 -j ACCEPT
+- iptables:
+    chain: FORWARD
+    action: append
+    protocol: all
+    jump: ACCEPT
+    destination: 0.0.0.0/0
+  tags: docker_install
+  when: inventory_hostname in groups['controllers']
 
 - name: Install docker
   shell: curl -sSL get.docker.com | sh
+  tags: docker_install
+  when: inventory_hostname in groups['pizero']
 
 - name: Add pi to docker group
   user:
@@ -10,9 +47,49 @@
     shell: /bin/bash
     groups: docker
     append: yes
+  tags: docker_install
 
 - name: Make sure a service is running
   systemd:
     enabled: yes
     state: started
     name: docker
+  tags: docker_install
+
+- name: Install pip
+  apt:
+    name: python-pip
+    state: present
+  tags:
+    - docker_install
+
+- name: Docker requirement
+  pip:
+    name: docker-py
+  tags:
+    - docker_install
+
+# ADD cgroup_enable=cpuset to /boot/cmdline.txt
+# alias kubectl="docker exec -it k8s-kubelet-master kubectl"
+
+#### think later about this
+#
+#   # 538  apt install python-pip
+#   # 539  pip install docker-compose
+# - name: Copy docker compose
+#   template: src={{ item.source }} dest={{ item.dest }}
+#   with_items:
+#     - { source: 'docker-compose.yml.j2', dest: '/docker-compose.yml'  }
+#   tags: docker_run
+#
+# - name: Kill all container
+#   shell: docker rm -f `docker ps -a|grep -v CONTAINER |awk '{print $1}'`
+#   ignore_errors: yes
+#   tags: docker_run
+#
+# - name: Run composer
+#   # shell: docker-compose pull && docker-compose -f /docker-compose.yml up --force-recreate -d
+#   shell: docker-compose -f /docker-compose.yml up --force-recreate -d
+#   args:
+#     chdir: /
+#   tags: docker_run
