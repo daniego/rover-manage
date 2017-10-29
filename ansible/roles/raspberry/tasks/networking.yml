@@ -79,11 +79,15 @@
 
 - name: copy hostapd conf
   copy: src=etc/hostapd/hostapd.conf dest=/etc/hostapd/hostapd.conf
-  tags: router
+  tags:
+    - router
+    - hostapd
 
 - name: restart hostapd
   service: name=hostapd state=stopped
-  tags: router
+  tags:
+    - router
+    - hostapd
 
 #- name: stop hostapd
 #  shell: service hostapd force-reload
@@ -91,16 +95,18 @@
 
 - name: start hostapd
   service: name=hostapd state=started
-  tags: router
-
-- name: start pptpd
-  service: name=pptpd state=restarted
   tags:
     - router
-    - vpn-config
+    - hostapd
 
-- name: download clusterhat
-  copy:
-    src: usr/local/bin/clusterhat
-    dest: /usr/local/bin/clusterhat
-    mode: 755
+# - name: start pptpd
+#   service: name=pptpd state=restarted
+#   tags:
+#     - router
+#     - vpn-config
+#
+# - name: download clusterhat
+#   copy:
+#     src: usr/local/bin/clusterhat
+#     dest: /usr/local/bin/clusterhat
+#     mode: 755

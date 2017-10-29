@@ -19,3 +19,9 @@ Check the official documentation to set it up <http://clusterhat.com/>
 
 - networking-install
 - networking-config
+
+# Networking config
+
+wlan0:
+hostapd interface
+IP: 192.168.10.1

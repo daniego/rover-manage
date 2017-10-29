@@ -26,6 +26,7 @@
 
 # Swapp will be done soon
 #
+# mkdir /swap/
 # dd if=/dev/zero of=/swap/swapfile bs=1M count=1024
 # mkswap /swap/swapfile
 # swapon /swap/swapfile

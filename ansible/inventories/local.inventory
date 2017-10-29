@@ -8,7 +8,7 @@ pizero
 controller ansible_ssh_host=192.168.2.6
 
 [pizero]
-pi1 ansible_ssh_host=192.168.2.7
+#pi1 ansible_ssh_host=192.168.2.7
 
 [workers:children]
 pizero

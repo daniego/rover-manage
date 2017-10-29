@@ -6,15 +6,18 @@
 - name: Run etcd
   docker_container:
     name: k8s-etcd
-    image: andrewpsuedonym/etcd:2.1.1
-    command: /bin/etcd --addr=127.0.0.1:4001 --bind-addr=0.0.0.0:4001 --data-dir=/var/etcd/data
+    image: dinorastoder/etcd-on-raspberry-pi
+    # image: andrewpsuedonym/etcd:2.1.1
+    command: --addr=127.0.0.1:4001 --bind-addr=0.0.0.0:4001 --data-dir=/var/etcd/data
+    # /bin/etcd
     state: started
-    # recreate: yes
+    recreate: yes
     restart: no
     restart_policy: always
-    volumes:
-      - /var/lib/kubernetes/etcd:/var/etcd/data
+    # volumes:
+    #   - /var/lib/kubernetes/etcd:/var/etcd/data
     network_mode: host
+    privileged: true
   tags:
     - etcd
     - kube_deploy
@@ -26,7 +29,7 @@
     docker run --net=host andrewpsuedonym/etcd:2.1.1 etcdctl set /coreos.com/network/config '{ "Network": "10.0.0.0/16" }'
   when: inventory_hostname in groups['controllers']
   tags:
-    - etcd
+    - etcd2
     - kube_deploy
 ### FANNEL
 
@@ -44,7 +47,7 @@
     volumes:
       - /dev/net:/dev/net
   tags:
-    - etcd
+    - flannel
     - kube_deploy
   when: inventory_hostname in groups['controllers']
 #   register: output
