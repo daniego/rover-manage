@@ -1,25 +1,29 @@
 ---
 # file: roles/raspberry/Tasks/main.yml
 
-- include: install.yml
+- import_tasks: install.yml
   tags: install
 
-- include: nginx.yml
-  tags: nginx
+# Deprecated in favour of docker containers
+# - import_tasks: nginx.yml
+#   tags: nginx
 
-- include: docker.yml
+- import_tasks: networking.yml
+  tags: networking
 
-- include: kubernetes.yml
+- import_tasks: docker.yml
+  tags: docker_install
 
-- include: uv4l.yml
+- import_tasks: kubernetes.yml
 
-- include: vpn.yml
+- import_tasks: uv4l.yml
 
-- include: networking.yml
+- import_tasks: vpn.yml
 
-- include: other.yml
 
-- include: gloveberry.yml
+- import_tasks: other.yml
+
+- import_tasks: gloveberry.yml
   tags:
     - gloveberry_install
     - gloveberry_setup

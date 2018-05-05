@@ -1,9 +1,7 @@
 auto br0
-#iface br0 inet static
-iface br0 inet dhcp
-        bridge_ports eth0
+
+iface br0 inet manual
+        bridge_ports none
         bridge_stp off
         bridge_waitport 0
         bridge_fd 0
-        #address 10.66.23.1
-        #subnet 255.255.255.0

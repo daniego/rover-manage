@@ -6,5 +6,5 @@
 # Include files from /etc/network/interfaces.d:
 source-directory /etc/network/interfaces.d
 
-auto lo br0
+auto lo
 iface lo inet loopback

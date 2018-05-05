@@ -1,7 +1,17 @@
 ---
 
-- name: restart uv4l_raspicam
-  service: name=uv4l_raspicam state=restarted
+- name: restart isc-dhcp-server
+  service:
+    name: isc-dhcp-server
+    state: restarted
 
-- name: restart uv4l-uvc
-  service: name=uv4l_uvc state=restarted
+- name: Restart hostapd
+  systemd:
+    state: restarted
+    daemon_reload: yes
+    name: hostapd
+
+- name: Restart supervisor
+  service:
+    name: supervisor
+    state: restarted
