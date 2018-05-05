@@ -11,6 +11,7 @@ A previous (no Docker) version can be found here: https://bitbucket.org/daniego/
 
 - Raspberry PI
 - Cluster HAT
+- USB WiFi dongle
 - 2/4 Raspberry PI zero
 - Ricoh Theta S
 
@@ -23,13 +24,35 @@ A previous (no Docker) version can be found here: https://bitbucket.org/daniego/
 
 Check the official documentation to set it up <http://clusterhat.com/>
 
-# Ansible tags
+# Install steps
+- Power on your Raspberry pi with and raspbian SD card
+- Place a file named "ssh" in the boot partition to enable it
+- After the first boot expand the filesystem with raspi-conf, set the main wifi connection on wlan0, get the IP and set it from the controller in `ansible/inventories/local.inventory`
 
+# Ansible tags
+- install
+- docker_install
+- networking (includes networking-install and networking-config)
 - networking-install
 - networking-config
 
 # Networking config
 
+eth0:
+Service interface
+IP: 10.66.23.1/24
+
 wlan0:
+Private interface
 hostapd interface
-IP: 192.168.10.1
+IP: 192.168.10.1/24
+
+wlan1:
+Public Interface
+DHCP
+wpa_supplicant
+
+
+TO DO:
+- improve networking playbook for consistency
+- automate pi zero networking setup
