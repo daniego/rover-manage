@@ -53,6 +53,7 @@ DHCP
 wpa_supplicant
 
 
-TO DO:
+# TO DO:
 - improve networking playbook for consistency
 - automate pi zero networking setup
+- add ignored groupvars file with wpa_supplicant networks
